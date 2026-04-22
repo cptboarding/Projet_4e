@@ -3,7 +3,8 @@ from dataclasses import dataclass
 import pyglet
 
 from pyglet.gl import GL_NEAREST
-import matrix_manager
+from Tests import matrix_manager
+
 
 @dataclass
 class World:
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     window.activate()
 
     from pyglet.window import key
-    from key_handler import KeyHandler
+    from Tests.key_handler import KeyHandler
 
     keys = KeyHandler(window)
 

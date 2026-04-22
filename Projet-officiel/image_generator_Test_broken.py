@@ -1,6 +1,7 @@
 
+
 import pyglet
-import useful_stuff as us
+from Tests import useful_stuff as us
 import random
 from pyglet.window import mouse
 
@@ -10,8 +11,10 @@ class MapImage:
     def __init__(self, dimensions: tuple[int, int]):
         self.dimensions = dimensions
         self.buffer = bytearray(dimensions[0] * dimensions[1] * 4)
-        self.image = pyglet.image.ImageData(self.dimensions[0], self.dimensions[1], 'RGBA', bytes(self.buffer), pitch=self.dimensions[0] * 4)
-        self.sprite = pyglet.sprite.Sprite(self.image)
+        self.texture = pyglet.image.Texture.create(self.dimensions[0], self.dimensions[1])
+        self.image = pyglet.image.ImageData(self.dimensions[0], self.dimensions[1], "RGBA", self.buffer)
+        self.texture.blit_into(self.image, 0, 0, 0)
+        self.sprite = pyglet.sprite.Sprite(self.texture)
         self.scale = 1
         self.position = [100, 100]
         self.drag_anchor = self.position
@@ -34,9 +37,8 @@ class MapImage:
         self.sprite.y = self.position[1]
 
     def generate_image(self):
-        img = pyglet.image.ImageData(self.dimensions[0], self.dimensions[1], 'RGBA', bytes(self.buffer), pitch=self.dimensions[0] * 4)
-        self.image.fmt = bytes(self.buffer)
-        self.sprite.image = img
+        self.texture.blit_into(self.image, 0, 0, 0)
+        self.sprite.image = self.texture
         self.sprite.scale = self.scale
 
 press = False
