@@ -14,7 +14,7 @@ class Square:
         self.visible = True
 
         self.dim_x = x_dim
-        self.dim_y = x_dim
+        self.dim_y = y_dim
 
         self.format = 'RGBA'
         self.pixels = bytearray(self.dim_x * self.dim_y * len(self.format))
@@ -28,8 +28,11 @@ class Square:
             pitch=self.pitch
         )
 
+
         self.texture = pyglet.image.Texture.create(self.dim_x, self.dim_y)
         self.texture.blit_into(self.image_data, 0, 0, 0)
+
+        self.texture = pyglet.image.load("green_plus.png")
 
         self.sprite = pyglet.sprite.Sprite(self.texture)
 
@@ -65,21 +68,39 @@ class Square:
     @property
     def centered_pos(self):
         sc = self.sprite.scale
-        centered_x = self.pos_x - self.dim_x*sc / 2
-        centered_y = self.pos_y - self.dim_y*sc / 2
+        centered_x = self.pos_x + self.dim_x*sc / 2.0
+        centered_y = self.pos_y + self.dim_y*sc / 2.0
         return centered_x, centered_y
 
-    def update_sprite_pos(self):
-        c_pos = self.centered_pos
+    def sprite_pos_offset(self):
+        sc = self.sprite.scale
+        self.sprite.x -= int(self.image_data.width * sc // 4)
+        self.sprite.y -= int(self.image_data.height * sc // 4)
 
+    def update_image_anchor(self):
+        sc = self.sprite.scale
+        """
+        x_an = self.dim_x * sc / -2.0
+        y_an = self.dim_y * sc / -2.0
+        self.texture.anchor_x = int(round(x_an))
+        self.texture.anchor_y = int(round(y_an))
+        """
+        self.image_data.anchor_x = int(self.image_data.width * sc // 2)
+        self.image_data.anchor_y = int(self.image_data.height * sc // 2)
+
+
+    def update_sprite_pos(self):
         if self.camera is not None:
-            vp = self.camera.get_position_on_viewport(c_pos[0], c_pos[1])
             self.sprite.scale = self.camera.zoom_scale
+            vp = self.camera.get_position_on_viewport(self.pos_x, self.pos_y)
+
+
             self.sprite.x = vp[0]
             self.sprite.y = vp[1]
-        elif self.centered:
-            self.sprite.x = c_pos[0]
-            self.sprite.y = c_pos[1]
+
+            self.sprite_pos_offset()
+
+        #no camera handling
         else:
             self.sprite.x = self.pos_x
             self.sprite.y = self.pos_y
@@ -92,7 +113,7 @@ class Square:
     def update(self):
 
         self.image_data.set_data(self.format, self.pitch, bytes(self.pixels))
-        self.sprite.image = self.image_data
+        #self.sprite.image = self.image_data
 
         self.set_sprite_nearest()
         self.update_sprite_pos()

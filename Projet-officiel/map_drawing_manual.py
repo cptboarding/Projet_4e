@@ -10,8 +10,7 @@ from pyglet.window import key
 from pyglet.window import mouse
 
 import math
-import tile_data_converter as Converter
-
+from Tests import tile_data_converter as Converter
 
 #the map generator to show us what we draw
 import Square_map as Square

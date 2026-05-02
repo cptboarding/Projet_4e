@@ -14,6 +14,8 @@ format_len = len(format)
 @dataclass
 class Encoder:
 
+
+
     data = {
         "WATER": b'\x00\x00\xff\xff',
         "GROUND": b'\x00\xff\x00\xff',
