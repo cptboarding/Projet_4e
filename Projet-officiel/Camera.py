@@ -218,7 +218,4 @@ if __name__ == "__main__":
     cam = Camera(dim)
     cam.debug_ui()
 
-    s = Square.Square(cam)
-    cam.window_objects.append(s)
-
     pyglet.app.run()
