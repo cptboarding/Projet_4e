@@ -28,12 +28,8 @@ class Square:
             pitch=self.pitch
         )
 
-
         self.texture = pyglet.image.Texture.create(self.dim_x, self.dim_y)
         self.texture.blit_into(self.image_data, 0, 0, 0)
-
-        self.texture = pyglet.image.load("green_plus.png")
-
         self.sprite = pyglet.sprite.Sprite(self.texture)
 
 
@@ -65,17 +61,10 @@ class Square:
     def position(self):
         return self.pos_x, self.pos_y
 
-    @property
-    def centered_pos(self):
-        sc = self.sprite.scale
-        centered_x = self.pos_x + self.dim_x*sc / 2.0
-        centered_y = self.pos_y + self.dim_y*sc / 2.0
-        return centered_x, centered_y
-
     def sprite_pos_offset(self):
         sc = self.sprite.scale
-        self.sprite.x -= int(self.image_data.width * sc // 4)
-        self.sprite.y -= int(self.image_data.height * sc // 4)
+        self.sprite.x -= int(self.image_data.width * sc // 2)
+        self.sprite.y -= int(self.image_data.height * sc // 2)
 
     def update_image_anchor(self):
         sc = self.sprite.scale
@@ -113,7 +102,7 @@ class Square:
     def update(self):
 
         self.image_data.set_data(self.format, self.pitch, bytes(self.pixels))
-        #self.sprite.image = self.image_data
+        self.sprite.image = self.image_data
 
         self.set_sprite_nearest()
         self.update_sprite_pos()

@@ -13,7 +13,7 @@ import math
 from Tests import tile_data_converter as Converter
 
 #the map generator to show us what we draw
-import Square_map as Square
+import Square_map_v1 as Square
 
 def main():
 
