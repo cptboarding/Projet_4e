@@ -12,20 +12,22 @@ import Tile
 
 U = TypeVar("U")
 
+#list est pas hachable --> problème
+
 # faire enum et NamedTule
-Plain = Tile.Tile("Plain", (124, 252, 0), ["Sea", "River"])  # (1, 1,)
-Mountain = Tile.Tile("Mountain", (139, 137, 137), ["Sea", "River"])  # (0.25, 10,)
-Forest = Tile.Tile("Forest", (34, 139, 34), ["Sea", "Desert", "River"])  # (1.25, 5,)
+Plain = Tile.Tile("Plain", (124, 252, 0), ("Sea", "River"))  # (1, 1,)
+Mountain = Tile.Tile("Mountain", (139, 137, 137), ("Sea", "River"))  # (0.25, 10,)
+Forest = Tile.Tile("Forest", (34, 139, 34), ("Sea", "Desert", "River"))  # (1.25, 5,)
 Sea = Tile.Tile(
-    "Sea", (28, 107, 160), ["Plain", "Mountain", "Forest", "Desert"]
+    "Sea", (28, 107, 160), ("Plain", "Mountain", "Forest", "Desert")
 )  # (0, 10000,)
-River = Tile.Tile("River", (70, 130, 180), ["Plain", "Mountain", "Forest"])  # (0, 3,)
-Desert = Tile.Tile("Desert", (237, 201, 175), ["Sea", "Forest"])  # (0.1, 0.5,)
+River = Tile.Tile("River", (70, 130, 180), ("Plain", "Mountain", "Forest"))  # (0, 3,)
+Desert = Tile.Tile("Desert", (237, 201, 175), ("Sea", "Forest"))  # (0.1, 0.5,)
 
 # obligatoire pour w_f_c_evolved
-Water = Tile.Tile("Water", (70, 130, 180), ["Ground"])  # (1, 1,)
-Coast = Tile.Tile("Coast", (237, 201, 175), [])  # (1, 1,)
-Ground = Tile.Tile("Ground", (34, 139, 34), ["Water"])  # (1, 1,)
+Water = Tile.Tile("Water", (70, 130, 180), ("Ground"))  # (1, 1,)
+Coast = Tile.Tile("Coast", (237, 201, 175), ())  # (1, 1,)
+Ground = Tile.Tile("Ground", (34, 139, 34), ("Water"))  # (1, 1,)
 
 
 def water_placement(
@@ -116,7 +118,7 @@ def w_f_c_simplified(matrix: mm.Matrix):
         matrix[cell[0][0]][cell[0][1]] = ran.choice(
             list(Counter(cell[1]).elements())
         )  # ToDo
-        condition(matrix, ((cell[0][0], cell[0][1]), matrix[cell[0][0]][cell[0][1]]))
+        condition(matrix, (cell[0][0], cell[0][1]))
         test_value -= 1
 
     for i in COORDINATES:
@@ -149,8 +151,6 @@ def condition(matrix: mm.Matrix, position: mm.Position):
         if cell1 == None:
             continue
 
-        bobo = cell1[1]
-        baba = bobo.items()
         matrix[cell1[0][0]][cell1[0][1]] = {
             tile: count
             for tile, count in cell1[1].items()
