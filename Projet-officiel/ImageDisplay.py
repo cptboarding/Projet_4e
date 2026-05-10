@@ -80,19 +80,54 @@ class ImageDisplay:
         glTexParameteri(texture.target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 
+    @property
+    def texture_dim(self) -> list[int]:
+        texture = self.sprite.image.get_texture()
+        return [texture.width, texture.height]
+
+    @property
+    def texture_dim_scaled(self):
+        return self.texture_dim[0] * self.scale, self.texture_dim[1] * self.scale
+
+    @property
+    def texture_offset(self) -> list[int]:
+        return [int(self.texture_dim_scaled[0] // 2), int(self.texture_dim_scaled[0] // 2)]
+
+    @property
+    def texture_dim_static(self):
+        return self.texture_dim[0] * self.size, self.texture_dim[1] * self.size
+
+    @property
+    def texture_offset_static(self) -> list[int]:
+        return [int(self.texture_dim_static[0] // 2), int(self.texture_dim_static[0] // 2)]
+
+    @property
+    def downside_corner(self) -> list[int]:
+        return [self.pos_x - self.texture_offset_static[0], self.pos_y - self.texture_offset_static[1]]
+
+    @property
+    def viewport_pos(self):
+        return self.camera.get_position_on_viewport(self.pos_x, self.pos_y)
+
+    @property
+    def viewport_pos_downside(self):
+        return self.camera.get_position_on_viewport(self.downside_corner[0], self.downside_corner[1])
+
+    @property
+    def scale(self):
+        return self.sprite.scale
+
     #for centering
     def sprite_pos_offset(self):
-        sc = self.sprite.scale
-        texture = self.sprite.image.get_texture()
-        self.sprite.x -= int(texture.width * sc // 2)
-        self.sprite.y -= int(texture.height * sc // 2)
+        self.sprite.x -= self.texture_offset[0]
+        self.sprite.y -= self.texture_offset[1]
 
     #reposition according to camera, update zoom
     #if no camera, stay in position
     def update_sprite_pos(self):
         if self.camera is not None:
             self.sprite.scale = self.camera.zoom_scale * self.size
-            vp = self.camera.get_position_on_viewport(self.pos_x, self.pos_y)
+            vp = self.viewport_pos
             self.sprite.x = vp[0]
             self.sprite.y = vp[1]
 

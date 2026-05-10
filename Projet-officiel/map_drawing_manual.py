@@ -2,88 +2,132 @@
 """
 First docstring in my life duh
 
-Program that lets you manually draw a map for the game, useful for debug
+Program that lets you manually draw a map for the game, the main project
 """
 
 import pyglet
-from pyglet.window import key
-from pyglet.window import mouse
-
 import math
-from Tests import tile_data_converter as Converter
 
-#the map generator to show us what we draw
-import Square_map_v1 as Square
+from SquareMap import SquareMap as Square
+from Camera import Camera
+
+
+def floored_to(x, n):
+    return n*math.floor(x/n)
+
 
 def main():
 
-    #globals
-    global_scale = 10.0
-    map_size = [50, 50]
-    window_size = [1000, 1000]
+    map_size = (50, 50)
+    tile_size = 4
+    map_base_size = 5.0
 
-    origin = [0, 0]
-    center = [i/2 for i in window_size]
-    downside_corner = [win/2 - mp*global_scale/2 for win, mp in zip(window_size, map_size)]
-    upside_corner = [win-dwn for dwn, win in zip(downside_corner, window_size)]
+    drawing_mode = "tangent"
 
-    #main square map
-    s = Square.Square(x_dim=map_size[0], y_dim=map_size[1])
-    s.set_sprite_scale(global_scale)
-    s.pos_x, s.pos_y = center
+    cam = Camera((1000, 1000))
+    # cam.movement = False
+    # cam.scroll = False
+    cam.debug_ui()
+
+    s = Square(cam, "game", layer=0, map_dimensions=map_size, map_pixel_size=tile_size, size=map_base_size)
     s.rand_test()
+    cam.window_objects.append(s)
 
-    #square for mouse position
-    pointer = Square.Square(x_dim=1, y_dim=1)
-    pointer.centered = False
-    pointer.set_sprite_scale(global_scale)
-    pointer.set_pixel((0, 0), (0, 255, 0))
-    pointer.pos_x, pointer.pos_y = [100, 100]
+    pointer = Square(cam, "game", layer=0, map_dimensions=(1, 1), map_pixel_size=tile_size, size=map_base_size, centered=False)
+    pointer.rand_test()
+    pointer.set_pixel((0, 0), (0, 0, 255))
+    cam.window_objects.append(pointer)
 
-    #window
-    window = pyglet.window.Window(width=window_size[0], height=window_size[1])
-    handler = mouse.MouseStateHandler()
-    window.push_handlers(handler)
+    @cam.window.event
+    def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
+        #draw tangent
+        if cam.mouse_left and drawing_mode == "tangent":
+            X1, Y1 = mouse_pos_viewport_transform(x - dx, y - dy)
+            X2, Y2 = mouse_pos_viewport_transform(x, y)
+            x1_id, y1_id = find_mouse_id(X1, Y1)
+            x2_id, y2_id = find_mouse_id(X2, Y2)
+            print()
 
-    @window.event
-    def on_draw():
-        window.clear()
-        s.update()
-        pointer.update()
+            #number of tiles in between + the sign
+            dx_id_s = x2_id - x1_id
+            dy_id_s = y2_id - y1_id
+            dx_id = abs(dx_id_s)
+            dy_id = abs(dy_id_s)
 
-    @window.event
-    def on_key_press(symbol, modifiers):
-        if symbol == key.SPACE:
-            print(f'Map data (copy-paste the following):\n{s.pixels}')
-            d = Converter.Decoder()
-            e = Converter.Encoder()
-            decoded = d.full_decode(s.pixels)
-            print(f'decoded = {decoded}')
-            encoded = e.full_encode(decoded)
-            print(f'encoded  = {encoded}')
-            print(f'original = {s.pixels}')
-            print(encoded == s.pixels)
+            r: dict = {}  # {x: y}
+
+            if dx_id == 0 or dy_id == 0:
+                if dx_id == 0 and dy_id == 0:
+                    pass
+                elif dx_id == 0 and dy_id != 0:
+                    dy_s = int(dy_id / (y2_id - y1_id))
+                    for i in range(0, (dy_id + 1) * dy_s, dy_s):
+                        r[x1_id] = y1_id + i
+                elif dx_id != 0 and dy_id == 0:
+                    dx_s = int(dx_id / (x2_id - x1_id))
+                    for i in range(0, (dx_id + 1) * dx_s, dx_s):
+                        r[x1_id + i] = y1_id
+
+            else:
+                dx_s = int(dx_id / (x2_id - x1_id))
+                dy_s = int(dy_id / (y2_id - y1_id))
+
+                if dx_id >= dy_id:
+                    tng = dy_id * dy_s / dx_id  #the abs tangent always smaller than 1
+                    for i in range(0, (dx_id + 1) * dx_s, dx_s):
+                        r[x1_id + i] = y1_id + round(tng * abs(i))
+                else:
+                    tng = dx_id * dx_s / dy_id  # the abs tangent always smaller than 1
+                    for i in range(0, (dy_id + 1) * dy_s, dy_s):
+                        r[x1_id + round(tng * abs(i))] = y1_id + i
+
+            for i in r.keys():
+                xx = i
+                yy = r[i]
+                max_id = map_size
+                if 0 <= xx < max_id[0] and 0 <= yy < max_id[1]:
+                    s.set_pixel((xx, yy), (0, 0, 255))
+
+
+    def tile_len():
+        return s.tile_size / cam.zoom_scale
+
+    def mouse_pos_viewport():
+        x = cam.pos_x + (cam.window._mouse_x - cam.window_center[0]) / cam.zoom_scale
+        y = cam.pos_y + (cam.window._mouse_y - cam.window_center[1]) / cam.zoom_scale
+        return x, y
+
+    def mouse_pos_viewport_transform(mx, my):
+        x = cam.pos_x + (mx - cam.window_center[0]) / cam.zoom_scale
+        y = cam.pos_y + (my - cam.window_center[1]) / cam.zoom_scale
+        return x, y
+
+
+    def find_mouse_id(x, y):
+        t_len = tile_len()
+        dc = s.downside_corner
+
+        x_id = int(math.floor((x - dc[0]) / t_len))
+        y_id = int(math.floor((y - dc[1]) / t_len))
+
+        return x_id, y_id
 
     def update(dt):
+        dc = s.downside_corner
+        t_len = tile_len()
+        x, y = mouse_pos_viewport()
+        x_id, y_id = find_mouse_id(x, y)
+        max_id = map_size
 
-        x, y = window._mouse_x, window._mouse_y
-        rx, ry = 10*math.floor(x/10), 10*math.floor(y/10)
-        x_id = int((rx - downside_corner[0]) / global_scale)
-        y_id = int((ry - downside_corner[1]) / global_scale)
+        if 0 <= x_id < max_id[0] and 0 <= y_id < max_id[1]:
+            px, py = dc[0] + x_id*t_len, dc[1] + y_id*t_len
+            pointer.pos_x, pointer.pos_y = [px, py]
 
-        if 0 <= x_id < map_size[0] and 0 <= y_id < map_size[1]:
-            pointer.visible = True
-            pointer.pos_x, pointer.pos_y = [rx, ry]
-
-            if handler[mouse.LEFT]:
+            if cam.mouse_left and drawing_mode == "point":
                 s.set_pixel((x_id, y_id), (0, 0, 255))
-        else:
-            pointer.visible = False
 
+    pyglet.clock.schedule_interval(update, 1/60.0)
 
-
-    pyglet.clock.schedule_interval(update, 1 / 60)
-    pyglet.app.run(1/60)
-
+    pyglet.app.run()
 
 main()

@@ -12,6 +12,7 @@ from typing import Callable
 
 import pyglet
 from pyglet.window import key
+from pyglet.window import mouse
 from pyglet.graphics import Group
 
 
@@ -32,6 +33,9 @@ class Camera:
         self.pos_x = start_pos[0]
         self.pos_y = start_pos[1]
 
+        self.movement = True
+        self.scroll = True
+
         """The thing below initializes the pyglet window"""
 
         #window creation
@@ -50,7 +54,8 @@ class Camera:
 
         #necessary key handlers
         self.keys = key.KeyStateHandler()
-        self.window.push_handlers(self.keys)
+        self.mouse_buttons = mouse.MouseStateHandler()
+        self.window.push_handlers(self.mouse_buttons)
 
         #create list dumps for the drawing time, either object or UI element
         self.window_objects = []
@@ -109,6 +114,14 @@ class Camera:
             anchor_y='top',
             batch=self.batch_UI
         )
+        mouse_pos_label = pyglet.text.Label(
+            'Mouse pos debug',
+            x=10,
+            y=self.window.height - 70,
+            anchor_x='left',
+            anchor_y='top',
+            batch=self.batch_UI
+        )
 
         crosshair = pyglet.text.Label(
             '+',
@@ -129,10 +142,14 @@ class Camera:
         def cam_pos_label_updater(obj: pyglet, camera: "Camera"):
             obj.text = f"Camera pos: ({camera.pos_x:.1f}, {camera.pos_y:.1f})"
         dynamic_cam_pos_label = self.DynamicWrapper(cam_pos_label, self, cam_pos_label_updater)
+
+        def mouse_pos_label_updater(obj: pyglet, camera: "Camera"):
+            obj.text = f"Mouse pos: ({camera.window._mouse_x:.1f}, {camera.window._mouse_y:.1f})"
+        dynamic_mouse_pos_label = self.DynamicWrapper(mouse_pos_label, self, mouse_pos_label_updater)
         #endregion
 
         static = [crosshair]
-        dynamic = [dynamic_scroll_label, dynamic_cam_pos_label]
+        dynamic = [dynamic_scroll_label, dynamic_cam_pos_label, dynamic_mouse_pos_label]
 
         self.window_UI_static += static
         self.window_UI_dynamic += dynamic
@@ -173,10 +190,12 @@ class Camera:
 
     #scroll in runtime
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        self.scroll_handler(scroll_y)
+        if self.scroll:
+            self.scroll_handler(scroll_y)
 
     def update(self, dt):
-        self.position_handler(keyhandler=self.keys)
+        if self.movement:
+            self.position_handler(keyhandler=self.keys)
 
 
     #the shit ive been sweating on all this time -----------------------------
@@ -185,6 +204,10 @@ class Camera:
     @property
     def window_center(self):
         return self.viewport_dimensions[0]/2.0, self.viewport_dimensions[1]/2.0
+
+    @property
+    def window_dim_length(self):
+        return [self.viewport_dimensions[0]*self.zoom_scale, self.viewport_dimensions[1]*self.zoom_scale]
 
     @property
     def base_position(self):
@@ -199,6 +222,10 @@ class Camera:
         )
 
     #UI handling --------------------------------------------------------------
+
+    @property
+    def mouse_left(self):
+        return self.mouse_buttons[mouse.LEFT]
 
     def scroll_handler(self, scroll_y, lims: tuple[float, float] = (0.6, 10)):
         if scroll_y != 0:

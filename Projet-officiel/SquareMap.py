@@ -88,6 +88,11 @@ class SquareMap(ImageDisplay):
         self.image_data.set_data(self.pixel_format, self.pitch, bytes(self.pixel_array))
         self.sprite.image = self.image_data
 
+    @property
+    def tile_size(self):
+        d = self.texture_dim_scaled
+        return max(d[0] / self.dim_x, d[1] / self.dim_y)
+
     #replace byte at position (x, y)
     def set_pixel(self, pos: tuple[int, int], rgb: tuple[int, int, int], a: int = 255):
         x = pos[0]
