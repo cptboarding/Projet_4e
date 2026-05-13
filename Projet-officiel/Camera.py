@@ -54,6 +54,7 @@ class Camera:
 
         #necessary key handlers
         self.keys = key.KeyStateHandler()
+        self.window.push_handlers(self.keys)
         self.mouse_buttons = mouse.MouseStateHandler()
         self.window.push_handlers(self.mouse_buttons)
 
